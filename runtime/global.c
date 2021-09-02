@@ -7,14 +7,19 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h> /* _SC_NPROCESSORS_ONLN */
+#include <cilk/cilk_api.h>
 
 #include "debug.h"
 #include "global.h"
 #include "init.h"
 #include "readydeque.h"
 #include "reducer_impl.h"
-
+#include <sys/sysinfo.h>
+// The global cilk runtime system.
 global_state *default_cilkrts;
+
+// Thread-local cilk runtime system.
+__thread global_state *my_cilkrts;
 
 extern CHEETAH_INTERNAL unsigned cilkg_nproc;
 
@@ -86,7 +91,7 @@ void set_force_reduce(global_state *g, unsigned int force_reduce) {
 }
 
 // Set global RTS options from environment variables.
-static void parse_rts_environment(global_state *g) {
+static void parse_rts_environment(global_state *g, unsigned int nworkers) {
     size_t stacksize = env_get_int("CILK_STACKSIZE");
     if (stacksize > 0)
         set_stacksize(g, stacksize);
@@ -97,7 +102,8 @@ static void parse_rts_environment(global_state *g) {
     if (fiber_pool_cap > 0)
         set_fiber_pool_cap(g, fiber_pool_cap);
 
-    long proc_override = env_get_int("CILK_NWORKERS");
+    //long proc_override = env_get_int("CILK_NWORKERS");
+    long proc_override = nworkers;
     if (g->options.nproc == 0) {
         // use the number of cores online right now
         int available_cores = 0;
@@ -156,8 +162,10 @@ global_state *global_state_init(int argc, char *argv[]) {
     set_alert_debug_level(); // alert / debug used by global_state_allocate
     global_state *g = global_state_allocate();
 
+    g->boss = pthread_self();
+    g->boss_tid = gettid();
     g->options = (struct rts_options)DEFAULT_OPTIONS;
-    parse_rts_environment(g);
+    parse_rts_environment(g, argc);
 
     unsigned active_size = g->options.nproc;
     CILK_ASSERT_G(active_size > 0);

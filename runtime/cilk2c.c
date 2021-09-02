@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdatomic.h>
 #include <stdio.h>
 #include <unwind.h>
@@ -11,6 +12,17 @@
 #include "readydeque.h"
 #include "scheduler.h"
 
+// Needed only for threading.
+#include <errno.h>
+#include <pthread.h>
+#include <signal.h>
+#include <unistd.h>
+#include "init.h" // needed for threading.
+
+// For parsing cilk threading environment variables.
+#include <string.h>
+#include <assert.h> // replace with cilk asserts.
+
 extern void _Unwind_Resume(struct _Unwind_Exception *);
 extern _Unwind_Reason_Code _Unwind_RaiseException(struct _Unwind_Exception *);
 
@@ -18,6 +30,175 @@ CHEETAH_INTERNAL unsigned cilkg_nproc = 0;
 
 CHEETAH_INTERNAL struct cilkrts_callbacks cilkrts_callbacks = {
     0, 0, false, {NULL}, {NULL}};
+
+
+/** Internal functions for cilk thread **/
+pthread_t cilk_thrd_current() {
+    __cilkrts_worker *w = __cilkrts_get_tls_worker();
+    if (w == NULL) return pthread_self();
+    // NOTE(TFK): Assert that w->g != NULL?
+    return w->g->boss;
+}
+
+pthread_t cilk_thrd_get_worker_pthread(int i) {
+    return my_cilkrts->threads[i];
+}
+
+int cilk_thrd_num_workers() {
+    return my_cilkrts->nworkers;
+}
+
+void cilk_thrd_shutdown(void* n) {
+    // printf("CILKRTS cilk_thrd_shutdown\n");
+    // NOTE(TFK): Probably ought to pass the pointer via argument?
+    __cilkrts_shutdown(my_cilkrts);
+}
+
+void cilk_thrd_init(cilk_config_t config) {
+    if (__cilkrts_is_initialized()) {
+        printf("Error CILKRTS is already initalized!\n");
+    }
+    //printf("Initializing cilkrts for new thread %llu\n", pthread_self());
+    my_cilkrts = __cilkrts_startup(config.n_workers, NULL);
+
+    for (unsigned i = 0; i < cilkrts_callbacks.last_init; ++i)
+        cilkrts_callbacks.init[i]();
+
+    pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &(config.boss_affinity));
+
+    pthread_key_t key;
+    pthread_key_create(&key, cilk_thrd_shutdown);
+    pthread_setspecific(key, my_cilkrts); // so that its not null and will have destructor called.
+}
+
+cilk_config_t cilk_thrd_config_from_env(const char* cilk_env_name) {
+    char* value = getenv(cilk_env_name);
+    if (value == NULL) {
+        printf("WARNING cilk config environment variable %s is not defined. Using default cilk config \n", cilk_env_name);
+        cilk_config_t cfg;
+        cfg.n_workers = 0;
+        cpu_set_t mask;
+        // get the mask from the parent thread (master thread)
+        int err = pthread_getaffinity_np(pthread_self(), sizeof(mask),
+                                         &mask);
+        // Get the number of available cores (copied from os-unix.c)
+        cfg.n_workers = CPU_COUNT(&mask);
+        cfg.boss_affinity = mask;
+        return cfg;
+    }
+    int value_len = strlen(value);
+
+    // Filter characters.
+    char* value_filtered = malloc(sizeof(char) * (value_len+1));
+    int value_filtered_len = 0;
+    for (int i = 0; i < value_len; i++) {
+        if ((value[i] >= 48 && value[i] <= 57) || // 0-9
+            (value[i] >= 65 && value[i] <= 90) || //A-Z
+            (value[i] >= 97 && value[i] <= 122) || // a-z
+            (value[i] == 61) || // =
+            (value[i] == 44) || // ,
+            (value[i] == 59) // ;
+            ) {
+            
+            if (value[i] >= 65 && value[i] <= 90) {
+                // change upper case to lower case so that names are not 
+                //   case sensitive.
+                value_filtered[value_filtered_len++] = value[i] + (97 - 65); 
+            } else {
+                value_filtered[value_filtered_len++] = value[i];
+            }
+            continue;
+        }
+        printf("WARNING: Invalid character '%c' found in cilk thread config string with name '%s' and value '%s'." \
+                "This character will be ignored.\n", value[i], cilk_env_name, value);
+    }
+    assert(value_filtered_len <= value_len);
+    value_filtered[value_filtered_len++] = 0; // add null terminator.
+
+    int nworkers = 0;
+    cpu_set_t cilk_mask;
+    CPU_ZERO(&cilk_mask);
+
+    char* ptr;
+    char* token = NULL;
+    token = strtok_r(value_filtered, ";", &ptr);
+    if (token == NULL) printf("INVALID\n");
+    do {
+        char* ptr1 = NULL;
+        char* name = strtok_r(token, "=", &ptr1);
+        if (name == NULL) continue;
+        char* data = strtok_r(NULL, "=", &ptr1);
+        if (data == NULL) continue;
+        if (strcmp(name, "nworkers") == 0) {
+            int data_len = strlen(data);
+            if (data_len == 0) {
+                printf("WARNING: Cilk environment variable %s specified the key %s with no value\n", 
+                cilk_env_name, name);
+                continue;
+            }
+            
+            char* buffer = (char*) malloc(sizeof(char) * (data_len+1));
+            int buffer_len = 0;
+            for (int i = 0; i < data_len; i++) {
+                if (data[i] >= 48 && data[i] <= 57) { // 0-9
+                    buffer[buffer_len++] = data[i];
+                    continue; 
+                }
+                if (data[i] == 0) continue; // terminator character.
+                printf("WARNING: Cilk environment variable %s specified the key %s with a value that contained an invalid character '%c' This character will be ignored.\n",
+                       cilk_env_name, name, data[i]);
+            }
+            assert(buffer_len <= data_len);
+            buffer[buffer_len++] = 0; // add null terminator.
+            nworkers = atoi(buffer);
+            free(buffer);                        
+        }
+        if (strcmp(name, "cpuset") == 0) {
+            int data_len = strlen(data);
+
+            // Sanitize data: ',' and 0-9
+            char* data_clean = (char*) malloc(sizeof(char)* (data_len+1));
+            int data_clean_len = 0;
+            for (int i = 0; i < data_len; i++) {
+                if (data[i] >= 48 && data[i] <= 57) { // 0-9
+                    data_clean[data_clean_len++] = data[i];
+                    continue;
+                }
+                if (data[i] == 44) continue; // ','
+                if (data[i] == 0) continue; // null terminator.
+                printf("WARNING: Cilk environment variable %s specified the key %s with a value that contained an invalid character '%c' This character will be ignored.\n",
+                       cilk_env_name, name, data[i]);
+            }
+            assert(data_clean_len <= data_len);
+            data_clean[data_clean_len++] = 0; // add null terminator.
+            
+            if (data_clean_len == 0) {
+                printf("WARNING: Cilk environment variable %s specified the key %s with no value\n", 
+                cilk_env_name, name);
+                continue;
+            }
+
+            CPU_ZERO(&cilk_mask);
+            char* ptr2;
+            char* cpu_str = strtok_r(data, ",", &ptr2);
+            while (cpu_str != NULL) {
+                int cpu_idx = atoi(cpu_str);
+                //printf("setting cpuid %d\n", cpu_idx);
+                CPU_SET(cpu_idx, &cilk_mask);
+                cpu_str = strtok_r(NULL, ",", &ptr2);
+            }
+            free(data_clean);
+        }
+    } while ((token = strtok_r(NULL, ";", &ptr)));
+
+    cilk_config_t cfg;
+    cfg.n_workers = nworkers;
+    cfg.boss_affinity = cilk_mask;
+    return cfg;
+}
+
+
+/** end internal functions for cilk thread **/
 
 // Internal method to get the Cilk worker ID.  Intended for debugging purposes.
 //
@@ -27,12 +208,12 @@ unsigned __cilkrts_get_worker_number(void) {
     if (w)
         return w->self;
     // Use the last exiting worker from default_cilkrts instead
-    return default_cilkrts->exiting_worker;
+    return my_cilkrts->exiting_worker;
 }
 
 // Test if the Cilk runtime has been initialized.  This method is intended to
 // help initialization of libraries that depend on the OpenCilk runtime.
-int __cilkrts_is_initialized(void) { return NULL != default_cilkrts; }
+int __cilkrts_is_initialized(void) { return NULL != my_cilkrts; }
 
 // These callback-registration methods can run before the runtime system has
 // started.
@@ -43,8 +224,8 @@ int __cilkrts_is_initialized(void) { return NULL != default_cilkrts; }
 // Register a callback to run at Cilk-runtime initialization.  Returns 0 on
 // successful registration, nonzero otherwise.
 int __cilkrts_atinit(void (*callback)(void)) {
-    if (cilkrts_callbacks.last_init >= MAX_CALLBACKS ||
-        cilkrts_callbacks.after_init)
+    if (cilkrts_callbacks.last_init >= MAX_CALLBACKS /*||
+        cilkrts_callbacks.after_init*/)
         return -1;
 
     cilkrts_callbacks.init[cilkrts_callbacks.last_init++] = callback;
@@ -86,6 +267,7 @@ void __cilkrts_check_exception_raise(__cilkrts_stack_frame *sf) {
 
     return;
 }
+
 
 // Called after a cilk_sync in the personality function.  Checks if
 // there is an exception that needs to be propagated, and if so,

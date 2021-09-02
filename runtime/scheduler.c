@@ -101,7 +101,9 @@ static void signal_immediate_exception_to_all(__cilkrts_worker *const w) {
         curr_w->exc = EXCEPTION_INFINITY;
     }
     // make sure the exception is visible, before we continue
-    Cilk_fence();
+
+    //Cilk_fence();
+    __asm__ __volatile__ ("" : : : "memory");
 }
 */
 

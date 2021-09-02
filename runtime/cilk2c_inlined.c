@@ -43,6 +43,7 @@ uint64_t __cilkrts_get_dprand(void) {
 // This routine must be inlined for correctness.
 static inline __attribute__((always_inline)) void
 cilkify(global_state *g, __cilkrts_stack_frame *sf) {
+    CILK_ASSERT_G(g != NULL); // This can occur if we failed to initialize a runtime system for a pthread.
     // After inlining, orig_rsp will receive the stack pointer in the stack
     // frame of the Cilk function instantiation on the Cilkifying thread.
     void *orig_rsp = NULL;
@@ -120,7 +121,7 @@ __cilkrts_enter_frame(__cilkrts_stack_frame *sf) {
     __cilkrts_worker *w = __cilkrts_get_tls_worker();
     sf->flags = 0;
     if (NULL == w) {
-        cilkify(default_cilkrts, sf);
+        cilkify(my_cilkrts, sf);
         w = __cilkrts_get_tls_worker();
     }
     cilkrts_alert(CFRAME, w, "__cilkrts_enter_frame %p", (void *)sf);
@@ -222,6 +223,7 @@ void __cilkrts_save_fp_ctrl_state(__cilkrts_stack_frame *sf) {
 // for correctness.
 __attribute__((always_inline))
 void __cilkrts_pop_frame(__cilkrts_stack_frame *sf) {
+    pthread_testcancel(); // NOTE(TFK): Check behavior with and without this test.
     __cilkrts_worker *w =
         atomic_load_explicit(&sf->worker, memory_order_relaxed);
     cilkrts_alert(CFRAME, w, "__cilkrts_pop_frame %p", (void *)sf);

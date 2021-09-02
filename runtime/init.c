@@ -287,6 +287,7 @@ global_state *__cilkrts_startup(int argc, char *argv[]) {
 // Global constructor for starting up the default cilkrts.
 __attribute__((constructor)) void __default_cilkrts_startup() {
     default_cilkrts = __cilkrts_startup(0, NULL);
+    my_cilkrts = default_cilkrts;
 
     for (unsigned i = 0; i < cilkrts_callbacks.last_init; ++i)
         cilkrts_callbacks.init[i]();
@@ -337,6 +338,7 @@ static void __cilkrts_stop_workers(global_state *g) {
 // Setup runtime structures to start a new Cilkified region.  Executed by the
 // Cilkifying thread in cilkify().
 void invoke_cilkified_root(global_state *g, __cilkrts_stack_frame *sf) {
+    // NOTE(TFK): Maybe comment out this assert.
     CILK_ASSERT_G(!__cilkrts_get_tls_worker());
 
     // Start the workers if necessary

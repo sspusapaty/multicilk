@@ -20,6 +20,9 @@ CHEETAH_API void __cilkrts_pause_frame(__cilkrts_stack_frame *sf, char *exn);
 CHEETAH_API void __cilkrts_leave_frame(__cilkrts_stack_frame *sf);
 // Not marked as CHEETAH_API as it may be deprecated soon
 unsigned __cilkrts_get_nworkers(void);
+
+void cilk_thrd_shutdown(void* n);
+
 //CHEETAH_API int64_t* __cilkrts_get_pedigree(void);
 //void __cilkrts_pedigree_bump_rank(void);
 #endif

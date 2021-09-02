@@ -134,7 +134,7 @@ static hyper_id_t reducer_id_get(reducer_id_manager *m, __cilkrts_worker *w) {
 }
 
 static void reducer_id_free(__cilkrts_worker *const ws, hyper_id_t id) {
-    global_state *g = ws ? ws->g : default_cilkrts;
+    global_state *g = ws ? ws->g : my_cilkrts;
     reducer_id_manager *m = g->id_manager;
     reducer_id_manager_lock(m, ws);
     cilkrts_alert(REDUCE_ID, ws, "free reducer ID %lu of %lu",
@@ -215,7 +215,7 @@ void __cilkrts_hyper_destroy(__cilkrts_hyperobject_base *key) {
     // If we don't have a worker, use instead the last exiting worker from the
     // default CilkRTS.
     if (!w)
-        w = default_cilkrts->workers[default_cilkrts->exiting_worker];
+        w = my_cilkrts->workers[my_cilkrts->exiting_worker];
 
     hyper_id_t id = key->__id_num;
     cilkrts_alert(REDUCE_ID, w, "Destroy reducer %x at %p", (unsigned)id, key);
@@ -253,8 +253,8 @@ void __cilkrts_hyper_create(__cilkrts_hyperobject_base *key) {
     if (__builtin_expect(!w, 0)) {
         // Use the ID manager of the last exiting worker from the default
         // CilkRTS.
-        m = default_cilkrts->id_manager;
-        w = default_cilkrts->workers[default_cilkrts->exiting_worker];
+        m = my_cilkrts->id_manager;
+        w = my_cilkrts->workers[my_cilkrts->exiting_worker];
     } else {
         m = w->g->id_manager;
     }
@@ -353,7 +353,7 @@ void *__cilkrts_hyper_alloc(__cilkrts_hyperobject_base *key, size_t bytes) {
         if (!w)
             // Use instead the worker from the default CilkRTS that last exited
             // a Cilkified region
-            w = default_cilkrts->workers[default_cilkrts->exiting_worker];
+            w = my_cilkrts->workers[my_cilkrts->exiting_worker];
         return cilk_internal_malloc(w, bytes, IM_REDUCER_MAP);
     } else
         return cilk_aligned_alloc(16, bytes);
@@ -365,7 +365,7 @@ void __cilkrts_hyper_dealloc(__cilkrts_hyperobject_base *key, void *view) {
         if (!w)
             // Use instead the worker from the default CilkRTS that last exited
             // a Cilkified region
-            w = default_cilkrts->workers[default_cilkrts->exiting_worker];
+            w = my_cilkrts->workers[my_cilkrts->exiting_worker];
         cilk_internal_free(w, view, key->__view_size, IM_REDUCER_MAP);
     } else
         free(view);

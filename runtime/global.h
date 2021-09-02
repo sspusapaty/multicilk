@@ -14,6 +14,7 @@
 #include "rts-config.h"
 #include "sched_stats.h"
 #include "types.h"
+#include <cilk/cilk_api.h>
 
 struct __cilkrts_worker;
 struct reducer_id_manager;
@@ -75,9 +76,13 @@ struct global_state {
     struct reducer_id_manager *id_manager; /* null while Cilk is running */
 
     struct global_sched_stats stats;
+
+    pthread_t boss;
+    pid_t boss_tid;
 };
 
 extern global_state *default_cilkrts;
+extern __thread global_state *my_cilkrts;
 
 CHEETAH_INTERNAL void set_nworkers(global_state *g, unsigned int nworkers);
 CHEETAH_INTERNAL void set_force_reduce(global_state *g,
