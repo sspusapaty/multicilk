@@ -17,8 +17,7 @@ struct __cilkrts_worker *__cilkrts_get_tls_worker(void);
 /** CILK THREADS API **/
 typedef struct {
 	int n_workers;
-  cpu_set_t boss_affinity;
-  //void(*set_worker_affinity)(pthread_t thrd, int idx);
+    cpu_set_t boss_affinity;
 } cilk_config_t;
 
 #include <pthread.h>

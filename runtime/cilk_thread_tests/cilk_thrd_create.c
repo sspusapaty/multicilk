@@ -27,7 +27,7 @@
 #include <cilk/cilk.h>
 #include <cilk/cilk_api.h>
 #include "util.h"
-#include "cilk_c11_threads.h"
+#include <cilk/cilk_c11_threads.h>
 #include <sys/time.h>
 
 struct args {

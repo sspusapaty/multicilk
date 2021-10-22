@@ -79,8 +79,7 @@ cilk_config_t cilk_thrd_config_from_env(const char* cilk_env_name) {
         cfg.n_workers = 0;
         cpu_set_t mask;
         // get the mask from the parent thread (master thread)
-        int err = pthread_getaffinity_np(pthread_self(), sizeof(mask),
-                                         &mask);
+        pthread_getaffinity_np(pthread_self(), sizeof(mask), &mask);
         // Get the number of available cores (copied from os-unix.c)
         cfg.n_workers = CPU_COUNT(&mask);
         cfg.boss_affinity = mask;

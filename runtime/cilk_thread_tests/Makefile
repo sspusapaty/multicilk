@@ -21,7 +21,7 @@ TOOLS = multicilk_tools.o
 all: $(TESTS) $(CPP_TESTS)
 
 $(TESTS): %: %.o 
-	$(CC) $(GLIBC) $^ $(TOOLS) -o $@ -fopencilk #-ldl -lrt -lm -lc
+	$(CC)  $(GLIBC) $^ $(TOOLS) -o $@ -fopencilk #-ldl -lrt -lm -lc
 
 $(CPP_TESTS): %: %.o 
 	$(CXX) $(GLIBC) $^ $(TOOLS) -o $@ -fopencilk #-ldl -lrt -lm -lc
@@ -41,7 +41,7 @@ test: all
 
 
 %.o: %.c multicilk_tools.o
-	$(CC) -c $(OPTIONS) -DTIMING_COUNT=$(TIMING_COUNT) -o $@ $<
+	$(CC) -I../../include/ -c $(OPTIONS) -DTIMING_COUNT=$(TIMING_COUNT) -o $@ $<
 
 %.o: %.cpp multicilk_tools.o
 	$(CXX) -std=c++11 -c $(OPTIONS) -DTIMING_COUNT=$(TIMING_COUNT) -o $@ $<

@@ -1,1 +1,0 @@
-This directory and the code it contains is currently unused.
