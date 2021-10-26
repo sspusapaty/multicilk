@@ -70,8 +70,8 @@ int cilk_thrd_create_with_attr(cilk_config_t config, pthread_t *thread, pthread_
 }
 
 /* Terminates the calling thread with the return code res.
- * Can only be called when 1 active worker exists. If called when
- * multiple workers exist, the behavior is undefined.
+ * Cannot be called by an active cilk worker. If called by a worker,
+ * the behavior is undefined.
  * Does not support automatically calling the appropriate destructor
  * on data stored in tss.
  * Does not support automatically popping cleanup handlers from the
