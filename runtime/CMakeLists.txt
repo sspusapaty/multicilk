@@ -5,6 +5,7 @@ set(CHEETAH_SOURCES
   c_reducers.c
   cilk2c.c
   cilk2c_inlined.c
+  cilk_c11_threads.c
   cilkred_map.c
   closure.c
   debug.c

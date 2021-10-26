@@ -41,7 +41,7 @@ test: all
 
 
 %.o: %.c multicilk_tools.o
-	$(CC) -I../../include/ -c $(OPTIONS) -DTIMING_COUNT=$(TIMING_COUNT) -o $@ $<
+	$(CC) -c $(OPTIONS) -DTIMING_COUNT=$(TIMING_COUNT) -o $@ $<
 
 %.o: %.cpp multicilk_tools.o
 	$(CXX) -std=c++11 -c $(OPTIONS) -DTIMING_COUNT=$(TIMING_COUNT) -o $@ $<

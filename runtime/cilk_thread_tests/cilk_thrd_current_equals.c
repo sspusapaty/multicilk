@@ -25,13 +25,12 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <pthread.h>
-//#include "../cilk_threads.h"
 #include <cilk/cilk.h>
 #include <cilk/cilk_api.h>
 #include "util.h"
 #include <sys/time.h>
 
-#include "cilk_c11_threads.h"
+#include <cilk/cilk_c11_threads.h>
 
 struct args {
     pthread_t* main_thread;

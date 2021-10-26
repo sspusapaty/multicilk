@@ -15,7 +15,7 @@ TIMING_COUNT := 1
 
 .PHONY: all clean
 
-TESTS = helloworld simplefib
+TESTS = helloworld simplefib fib_and_validate
 
 all: $(TESTS)
 
@@ -23,7 +23,7 @@ $(TESTS): %: %.o
 	$(CC) $(GLIBC) $^ -o $@ -fopencilk #-ldl -lrt -lm -lc
 
 %.o: %.c
-	$(CC) -I../include/ -c $(OPTIONS) $(CFLAGS) -DTIMING_COUNT=$(TIMING_COUNT) -o $@ $<
+	$(CC) -c $(OPTIONS) $(CFLAGS) -DTIMING_COUNT=$(TIMING_COUNT) -o $@ $<
 
 %.o: %.cpp
 	$(CXX) -std=c++11 -c $(OPTIONS) -DTIMING_COUNT=$(TIMING_COUNT) -o $@ $<
