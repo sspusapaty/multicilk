@@ -16,17 +16,21 @@ TIMING_COUNT := 1
 .PHONY: all clean
 
 TESTS = helloworld simplefib fib_and_validate
+CPP_TESTS = cppfib
 
-all: $(TESTS)
+all: $(TESTS) $(CPP_TESTS)
 
 $(TESTS): %: %.o 
-	$(CC) $(GLIBC) $^ -o $@ -fopencilk #-ldl -lrt -lm -lc
+	$(CC) $(GLIBC) $^ -o $@ -fopencilk
+
+$(CPP_TESTS): %: %.o 
+	$(CXX) $(GLIBC) $^ $(TOOLS) -o $@ -fopencilk
 
 %.o: %.c
 	$(CC) -c $(OPTIONS) $(CFLAGS) -DTIMING_COUNT=$(TIMING_COUNT) -o $@ $<
 
 %.o: %.cpp
-	$(CXX) -std=c++11 -c $(OPTIONS) -DTIMING_COUNT=$(TIMING_COUNT) -o $@ $<
+	$(CXX) -std=c++11 -c $(OPTIONS) $(CFLAGS) -DTIMING_COUNT=$(TIMING_COUNT) -o $@ $<
 
 clean:
 	rm -f *.o *~ $(TESTS) $(CPP_TESTS) core.*

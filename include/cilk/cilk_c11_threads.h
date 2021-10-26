@@ -1,4 +1,9 @@
+#ifndef _CILK_C11_H
+#define  _CILK_C11_H
+
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #include <assert.h>
 #include <cilk/cilk.h>
 #include <cilk/cilk_api.h>
@@ -57,3 +62,5 @@ void cilk_thrd_exit(int res);
 
 __attribute__((unused))
 int cilk_thrd_join (pthread_t thr, int *res);
+
+#endif // CILK_C11_H
