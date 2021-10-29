@@ -7,14 +7,10 @@ typedef struct {
 const int fib_mem[] = {0,1,1,2,3,5,8,13};
 
 int fib( int n ) {
-    
     if (n < 2) return fib_mem[n];
-    
     int x = cilk_spawn fib(n-1);
     int y = fib(n-2);
-    
     cilk_sync;
-
     return x+y;
 }
 
@@ -23,52 +19,59 @@ typedef struct {
     int fib;
 } entry;
 
+// shared buffer to used by producer and consumer to store data
+#define EMPTY (-1)
 entry buffer[2];
 pthread_mutex_t queueMutex;
 
 int produce( void* arg ) {
+    // find the max limit to keep producing fibonacci nums until
     int max = ((args*)arg)->n;
     
     for (int n = 1; n <= max; ++n) {
+        // creating the data
         int data = fib(n);
         entry e;
         e.n = n;
         e.fib = data;
         
+        // spin until an empty buffer spot is found
         int i = 0;
-        while (1) {
-            if (buffer[i].n == -1) {
-                pthread_mutex_lock(&queueMutex);
-                buffer[i] = e;
-                pthread_mutex_unlock(&queueMutex);
-                break;
-            }
+        while (buffer[i].n != EMPTY) {
             i = (i+1)%2;
         }
-
+        // lock the buffer and insert element
+        pthread_mutex_lock(&queueMutex);
+        buffer[i] = e;
+        pthread_mutex_unlock(&queueMutex);
     }
 
     return 0;
 }
 
 int consume( void* arg ) {
+    // find limit for when to stop consuming
     int max = ((args*)arg)->n;
+
+    // spin while we are still allowed to consume
     while (1) {
         int i = 0;
         entry data;
-        while (1) {
-            if (buffer[i].n != -1) {
-                pthread_mutex_lock(&queueMutex);
-                data = buffer[i];
-                buffer[i].n = -1;
-                buffer[i].n = -1;
-                pthread_mutex_unlock(&queueMutex);
-                break;
-            }
+        // spin until nonempty entry is found
+        while (buffer[i].n == EMPTY) {
             i = (i+1)%2;
         }
 
-        printf("Consumer decided fib(%d) is correct(%d)!\n",data.n,fib(data.n) == data.fib);
+        // lock buffer, retrieve entry, set slot to empty
+        pthread_mutex_lock(&queueMutex);
+        data = buffer[i];
+        buffer[i].n = EMPTY;
+        pthread_mutex_unlock(&queueMutex);
+
+        // validate if the fib value is correct
+        printf("Consumer: is fib(%d) is correct? %d!\n",data.n,fib(data.n) == data.fib);
+        
+        // if hit consuming limit, then break and exit;
         if (data.n == max) break;
     }
     return 0;
@@ -89,11 +92,10 @@ int main(int argc, char** argv) {
         n = atoi(argv[1]);
     }
 
-    // initialize buffer
+    // initialize buffer to EMPTY
     pthread_mutex_init(&queueMutex, NULL);
     for (int i = 0; i < 2; ++i) {
-        buffer[i].n = -1;
-        buffer[i].fib = -1;
+        buffer[i].n = EMPTY;
     }
 
     args x = {.n = n};

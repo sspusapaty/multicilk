@@ -15,6 +15,10 @@ int fib( int n ) {
     return x+y;
 }
 
+void wrap_fib(int n, int* ret) {
+    *ret = fib(n);
+}
+
 int main(int argc, char** argv) {
     THREAD_PRINT("hello world from main!\n");
     
@@ -27,9 +31,12 @@ int main(int argc, char** argv) {
     }
 
     // create thread with new cilk runtime
-    std::thread thr = cilk_thread_create(cfg, fib, n);
+    int ret = -1;
+    std::thread thr = cilk_thread_create(cfg, wrap_fib, n, &ret);
 
     thr.join();
+
+    printf("fib(%d)=%d\n", n, ret);
     
     return 0;
 }
