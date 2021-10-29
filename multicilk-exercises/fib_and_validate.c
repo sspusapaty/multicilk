@@ -6,6 +6,7 @@ typedef struct {
 
 const int fib_mem[] = {0,1,1,2,3,5,8,13};
 
+__attribute__((noinline))
 int fib( int n ) {
     if (n < 2) return fib_mem[n];
     int x = cilk_spawn fib(n-1);
