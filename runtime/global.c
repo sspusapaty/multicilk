@@ -163,7 +163,6 @@ global_state *global_state_init(int argc, char *argv[]) {
     global_state *g = global_state_allocate();
 
     g->boss = pthread_self();
-    g->boss_tid = gettid();
     g->options = (struct rts_options)DEFAULT_OPTIONS;
     parse_rts_environment(g, argc);
 
