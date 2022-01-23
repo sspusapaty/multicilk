@@ -82,7 +82,7 @@ void cilk_thrd_init(cilk_config_t config) {
     pthread_setspecific(key, my_cilkrts); // so that its not null and will have destructor called.
 }
 
-cilk_config_t cilk_thrd_config_from_env(const char* cilk_env_name) {
+cilk_config_t cilk_cfg_from_env(const char* cilk_env_name) {
     char* value = NULL;
     if (cilk_env_name != NULL)
         value = getenv(cilk_env_name);

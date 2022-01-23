@@ -18,7 +18,7 @@
 __attribute__((unused))
 static __always_inline bool
 is_cilk_worker() {
-    return pthread_self() == thrd_current();
+    return worker_current() != thrd_current();
 }
 
 /* General wrapper function to create cilk runtime object and set it's

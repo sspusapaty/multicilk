@@ -25,7 +25,7 @@ typedef struct {
 thrd_t thrd_current();
 thrd_t worker_current();
 void cilk_thrd_init(cilk_config_t config);
-cilk_config_t cilk_thrd_config_from_env(const char* name);
+cilk_config_t cilk_cfg_from_env(const char* name);
 /** END CILK THREADS API **/
 
 
