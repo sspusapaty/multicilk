@@ -162,7 +162,7 @@ global_state *global_state_init(int argc, char *argv[]) {
     set_alert_debug_level(); // alert / debug used by global_state_allocate
     global_state *g = global_state_allocate();
 
-    g->boss = pthread_self();
+    g->boss = thrd_current();
     g->options = (struct rts_options)DEFAULT_OPTIONS;
     parse_rts_environment(g, argc);
 

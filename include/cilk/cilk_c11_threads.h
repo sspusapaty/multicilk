@@ -26,41 +26,26 @@ struct cilk_c11_thrd_args {
     cilk_config_t config;
 };
 
-/* cilk thread error codes
- */
-enum
-{
-  cilk_thrd_success  = 0,
-  cilk_thrd_busy     = 1,
-  cilk_thrd_error    = 2,
-  cilk_thrd_nomem    = 3,
-  cilk_thrd_timedout = 4
-};
-
 /* Creates a new pthread with a new cilk runtime (new set of workers) with the configuration
  * set by `config`. The pthread will call the function `func()` with `arg` as the argument.
  * The return value follows the documentation of `pthread_create()`
  */
 __attribute__((unused))
-int cilk_thrd_create(cilk_config_t config, pthread_t* thread, int (*func)(void*), void *arg);
-
-/* Same as `cilk_thrd_create()` but can specify attributes of the newly created pthread.
- */
-__attribute__((unused))
-int cilk_thrd_create_with_attr(cilk_config_t config, pthread_t *thread, pthread_attr_t* attr, int (*func) (void*), void *arg);
+int cilk_thrd_create(cilk_config_t config, thrd_t* thread, int (*func)(void*), void *arg);
 
 /* Terminates the calling thread with the return code res.
  * Cannot be called by an active cilk worker.
- * If called by a cilk worker the behavior is undefined.
- * Does not support automatically calling the appropriate destructor
- * on data stored in tss.
- * Does not support automatically popping cleanup handlers from the
- * thread's stack and running them.
+ * If called by a cilk worker the behavior is a no-op.
  */
 __attribute__((unused))
-void cilk_thrd_exit(int res);
+void thrd_exit(int res);
 
 __attribute__((unused))
-int cilk_thrd_join (pthread_t thr, int *res);
+int thrd_join(thrd_t thr, int *res);
 
+__attribute__((unused))
+void worker_exit(int res);
+
+__attribute__((unused))
+int worker_join(thrd_t thr, int *res);
 #endif // CILK_C11_H

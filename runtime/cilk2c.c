@@ -15,6 +15,8 @@
 // Needed only for threading.
 #include <errno.h>
 #include <pthread.h>
+#include <dlfcn.h>
+#include <threads.h>
 #include <signal.h>
 #include <unistd.h>
 #include "init.h" // needed for threading.
@@ -33,11 +35,20 @@ CHEETAH_INTERNAL struct cilkrts_callbacks cilkrts_callbacks = {
 
 
 /** Internal functions for cilk thread **/
-pthread_t cilk_thrd_current() {
+static thrd_t (*real_thrd_current)(void) = NULL;
+thrd_t thrd_current() {
+    if ( real_thrd_current == NULL)
+        real_thrd_current = dlsym(RTLD_NEXT, "thrd_current");
     __cilkrts_worker *w = __cilkrts_get_tls_worker();
-    if (w == NULL) return pthread_self();
+    if (w == NULL) return real_thrd_current();
     // NOTE(TFK): Assert that w->g != NULL?
     return w->g->boss;
+}
+
+thrd_t worker_current() {
+    if ( real_thrd_current == NULL)
+        real_thrd_current = dlsym(RTLD_NEXT, "thrd_current");
+    return real_thrd_current(); 
 }
 
 pthread_t cilk_thrd_get_worker_pthread(int i) {

@@ -2,6 +2,7 @@
 #define _CILK_GLOBAL_H
 
 #include <pthread.h>
+#include <threads.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -77,7 +78,7 @@ struct global_state {
 
     struct global_sched_stats stats;
 
-    pthread_t boss;
+    thrd_t boss;
 };
 
 extern global_state *default_cilkrts;
