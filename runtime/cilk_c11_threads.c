@@ -63,7 +63,8 @@ void thrd_exit(int res)
     if (!real_thrd_exit)
         real_thrd_exit = dlsym(RTLD_NEXT, "thrd_exit");
     if (!is_cilk_worker())
-        real_thrd_exit(res); 
+        real_thrd_exit(res);
+    abort();
 }
 
 static int (*real_thrd_join)(thrd_t, int*) = NULL;
