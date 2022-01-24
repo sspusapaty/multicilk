@@ -39,7 +39,7 @@ static int cilk_thrd_c11_wrapper(void* args) {
  * set by `config`. The pthread will call the function `func()` with `arg` as the argument.
  * The return value follows the documentation of `pthread_create()`
  */
-static void (*real_thrd_create)(thrd_t*, thrd_start_t, void*) = NULL;
+static int (*real_thrd_create)(thrd_t*, thrd_start_t, void*) = NULL;
 __attribute__((unused))
 int thrd_create(thrd_t* thr, thrd_start_t f, void* args)
 {
@@ -80,7 +80,7 @@ void thrd_exit(int res)
         real_thrd_exit = dlsym(RTLD_NEXT, "thrd_exit");
     if (!is_cilk_worker())
         real_thrd_exit(res);
-    abort();
+    real_thrd_exit(res); // should be modified later once semantics are more clear
 }
 
 static int (*real_thrd_join)(thrd_t, int*) = NULL;
