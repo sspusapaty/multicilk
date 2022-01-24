@@ -48,4 +48,7 @@ void worker_exit(int res);
 
 __attribute__((unused))
 int worker_join(thrd_t thr, int *res);
+
+__attribute__((unused))
+int thrd_create(thrd_t* thr, thrd_start_t f, void* args);
 #endif // CILK_C11_H

@@ -39,6 +39,21 @@ static int cilk_thrd_c11_wrapper(void* args) {
  * set by `config`. The pthread will call the function `func()` with `arg` as the argument.
  * The return value follows the documentation of `pthread_create()`
  */
+static void (*real_thrd_create)(thrd_t*, thrd_start_t, void*) = NULL;
+__attribute__((unused))
+int thrd_create(thrd_t* thr, thrd_start_t f, void* args)
+{
+    if (!real_thrd_create)
+        real_thrd_create = dlsym(RTLD_NEXT, "thrd_create");
+    int res = real_thrd_create(thr, f, args);
+    if (res == thrd_success & is_cilk_worker()) {
+        cpu_set_t cpuset;
+        pthread_getaffinity_np(thrd_current(), sizeof(cpu_set_t), &cpuset);
+        pthread_setaffinity_np(*thr, sizeof(cpu_set_t), &cpuset);
+    }
+    return res;
+}
+
 __attribute__((unused))
 int cilk_thrd_create(cilk_config_t config, thrd_t* thread, thrd_start_t func, void *arg) {
     struct cilk_c11_thrd_args* c11_args = (struct cilk_c11_thrd_args*) malloc(sizeof(struct cilk_c11_thrd_args));
@@ -47,6 +62,7 @@ int cilk_thrd_create(cilk_config_t config, thrd_t* thread, thrd_start_t func, vo
     c11_args->config = config;
     return thrd_create(thread, cilk_thrd_c11_wrapper, c11_args); 
 }
+
 
 /* Terminates the calling thread with the return code res.
  * Cannot be called by an active cilk worker. If called by a worker,
