@@ -35,6 +35,27 @@ CHEETAH_INTERNAL struct cilkrts_callbacks cilkrts_callbacks = {
 
 
 /** Internal functions for cilk thread **/
+static int is_cilk_worker() {
+    return __cilkrts_get_tls_worker() != NULL;
+}
+
+static pid_t get_boss_tid() {
+    return __cilkrts_get_tls_worker()->g->boss_tid;
+}
+
+__attribute__((unused))
+void cilkmutex_init() {
+    void (*reg_is_cilk)(int (*f)(void));
+    reg_is_cilk = dlsym(RTLD_DEFAULT, "reg_is_cilk_worker");
+    if (reg_is_cilk == NULL) printf("%s\n", dlerror());
+    reg_is_cilk(is_cilk_worker);
+
+    void (*reg_get_boss_tid)(pid_t (*f)(void));
+    reg_get_boss_tid = dlsym(RTLD_DEFAULT, "reg_get_boss_tid");
+    if (reg_get_boss_tid == NULL) printf("%s\n", dlerror());
+    reg_get_boss_tid(get_boss_tid);
+}
+
 static thrd_t (*real_thrd_current)(void) = NULL;
 thrd_t thrd_current() {
     if ( real_thrd_current == NULL)
