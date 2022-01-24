@@ -79,6 +79,7 @@ struct global_state {
     struct global_sched_stats stats;
 
     thrd_t boss;
+    pthread_mutex_t cilkls_lock;
 };
 
 extern global_state *default_cilkrts;

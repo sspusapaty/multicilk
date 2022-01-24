@@ -455,6 +455,7 @@ static void global_state_deinit(global_state *g) {
     pthread_cond_destroy(&g->cilkified_cond_var);
     pthread_mutex_destroy(&g->start_lock);
     pthread_cond_destroy(&g->start_cond_var);
+    pthread_mutex_destroy(&g->cilkls_lock);
     free(g->workers);
     g->workers = NULL;
     g->nworkers = 0;

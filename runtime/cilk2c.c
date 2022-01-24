@@ -35,6 +35,35 @@ CHEETAH_INTERNAL struct cilkrts_callbacks cilkrts_callbacks = {
 
 
 /** Internal functions for cilk thread **/
+static int is_cilk_worker() {
+    return __cilkrts_get_tls_worker() != NULL;
+}
+
+static pthread_mutex_t* get_cilkls_mutex() {
+    __cilkrts_worker *w = __cilkrts_get_tls_worker();
+    if (w == NULL) return NULL;
+    return &w->g->cilkls_lock;
+}
+
+__attribute__((unused))
+void cilkls_init() {
+    printf("here!!!!\n");
+    void (*reg_is_cilk)(int (*f)(void));
+    reg_is_cilk = dlsym(RTLD_DEFAULT, "reg_is_cilk_thread");
+    if (reg_is_cilk == NULL) printf("%s\n", dlerror());
+    reg_is_cilk(is_cilk_worker);
+
+    void (*reg_cilk_current)(pthread_t (*f)(void));
+    reg_cilk_current = dlsym(RTLD_DEFAULT, "reg_cilk_current");
+    if (reg_cilk_current == NULL) printf("%s\n", dlerror());
+    reg_cilk_current(thrd_current);
+
+    void (*reg_get_cilkls_mutex)(pthread_mutex_t* (*f)(void));
+    reg_get_cilkls_mutex = dlsym(RTLD_DEFAULT, "reg_get_cilkls_mutex");
+    if (reg_get_cilkls_mutex == NULL) printf("%s\n", dlerror());
+    reg_get_cilkls_mutex(get_cilkls_mutex);
+}
+
 static thrd_t (*real_thrd_current)(void) = NULL;
 thrd_t thrd_current() {
     if ( real_thrd_current == NULL)

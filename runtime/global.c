@@ -41,6 +41,7 @@ static global_state *global_state_allocate() {
     cilk_mutex_init(&g->print_lock);
 
     // TODO: Convert to cilk_* equivalents
+    pthread_mutex_init(&g->cilkls_lock, NULL);
     pthread_mutex_init(&g->cilkified_lock, NULL);
     pthread_cond_init(&g->cilkified_cond_var, NULL);
     pthread_mutex_init(&g->start_lock, NULL);
@@ -151,6 +152,7 @@ static void parse_rts_environment(global_state *g, unsigned int nworkers) {
     }
 }
 
+static int cilkls_set = 0;
 global_state *global_state_init(int argc, char *argv[]) {
     cilkrts_alert(BOOT, NULL,
                   "(global_state_init) Initializing global state");
@@ -162,6 +164,10 @@ global_state *global_state_init(int argc, char *argv[]) {
     set_alert_debug_level(); // alert / debug used by global_state_allocate
     global_state *g = global_state_allocate();
 
+    if (!cilkls_set) {
+        cilkls_init();
+        cilkls_set = 1;
+    }
     g->boss = thrd_current();
     g->options = (struct rts_options)DEFAULT_OPTIONS;
     parse_rts_environment(g, argc);
