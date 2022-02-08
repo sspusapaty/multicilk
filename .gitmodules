@@ -1,3 +1,3 @@
 [submodule "glibc_cilkls"]
 	path = glibc_cilkls
-	url = git@github.mit.edu:pusapaty/glibc_cilkls.git
+	url = git@github.com:sspusapaty/glibc_cilkls.git
