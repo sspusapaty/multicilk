@@ -20,7 +20,7 @@ You can also use every function from the C11 API safely (except the keyword `thr
 * To use thread local storage related functions, see the `cilkls` branch. You will need to compile the modified glibc and link it with your Multicilk program.
 * To use mutex/cnd var related functions, see the `mutexes_and_cnd_vars` branch. You will need to compile the modified glibc and link it with your Multicilk program. 
 
-//TODO: Merge the different glibc's into one unified glibc to use.
+//TODO: Merge the different glibcs into one unified glibc to use.
 
 We also provide the following extra functions for working with Cilk runtimes.
 
@@ -32,7 +32,7 @@ This function takes in an evironment variable and outputs a cilk configuration b
 
 ## Bulding glibc
 To build glibc from source, use the following steps:
-1. `cd <glibc_dir>
+1. `cd <glibc_dir>`
 2. `mkdir build && cd build`
 3. `../configure --prefix=$(pwd)/install --with-tls --enable-add-ons=nptl`
 4. ``make -j `nproc` ``
