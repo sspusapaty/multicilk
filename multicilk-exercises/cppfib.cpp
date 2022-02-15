@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
     THREAD_PRINT("hello world from main!\n");
     
     // get cilk runtime config
-    cilk_config_t cfg = cilk_thrd_config_from_env("CILK_CONFIG1");
+    cilk_config_t cfg = cilk_cfg_from_env("CILK_CONFIG1");
     CFG_PRINT(cfg);
     int n = 10;
     if (argc == 2) {

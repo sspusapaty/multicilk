@@ -18,7 +18,7 @@
     }
 
 
-#define THREAD_PRINT(...) MACRO_PRINT(cilk_thrd_current(),__VA_ARGS__);
+#define THREAD_PRINT(...) MACRO_PRINT(thrd_current(),__VA_ARGS__);
 
 #define SELF_PRINT(...) MACRO_PRINT(pthread_self(),__VA_ARGS__);
 

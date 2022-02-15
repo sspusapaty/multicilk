@@ -10,7 +10,7 @@ int helloworld( void* arg ) {
 int main() {
     THREAD_PRINT("hello world from main!\n");
     // get cilk runtime config
-    cilk_config_t cfg = cilk_thrd_config_from_env("");
+    cilk_config_t cfg = cilk_cfg_from_env("");
     pthread_t thr1;
     
     // create thread with new cilk runtime
@@ -20,7 +20,7 @@ int main() {
         return -1;
     }
 
-    cilk_thrd_join(thr1, NULL);
+    thrd_join(thr1, NULL);
 
     return 0;
 }

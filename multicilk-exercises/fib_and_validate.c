@@ -82,8 +82,8 @@ int main(int argc, char** argv) {
     THREAD_PRINT("hello world from main!\n");
     
     // get cilk runtime configs
-    cilk_config_t cfg1 = cilk_thrd_config_from_env("CILK_CONFIG1");
-    cilk_config_t cfg2 = cilk_thrd_config_from_env("CILK_CONFIG2");
+    cilk_config_t cfg1 = cilk_cfg_from_env("CILK_CONFIG1");
+    cilk_config_t cfg2 = cilk_cfg_from_env("CILK_CONFIG2");
     CFG_PRINT(cfg1);
     CFG_PRINT(cfg2);
 
@@ -108,8 +108,8 @@ int main(int argc, char** argv) {
         return -1;
     }
     
-    cilk_thrd_join(prod, NULL);
-    cilk_thrd_join(cons, NULL);
+    thrd_join(prod, NULL);
+    thrd_join(cons, NULL);
     
     return 0;
 }

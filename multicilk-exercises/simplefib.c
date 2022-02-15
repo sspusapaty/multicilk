@@ -30,8 +30,8 @@ int main(int argc, char** argv) {
     THREAD_PRINT("hello world from main!\n");
     
     // get cilk runtime config
-    cilk_config_t cfgx = cilk_thrd_config_from_env("CILK_CONFIG1");
-    cilk_config_t cfgy = cilk_thrd_config_from_env("CILK_CONFIG2");
+    cilk_config_t cfgx = cilk_cfg_from_env("CILK_CONFIG1");
+    cilk_config_t cfgy = cilk_cfg_from_env("CILK_CONFIG2");
     CFG_PRINT(cfgx);
     CFG_PRINT(cfgy);
     
@@ -55,8 +55,8 @@ int main(int argc, char** argv) {
     
     // join threads to get result;
     int res;
-    cilk_thrd_join(thr1, &res);
-    cilk_thrd_join(thr2, NULL);
+    thrd_join(thr1, &res);
+    thrd_join(thr2, NULL);
 
     printf("fib(%d) = %d\n", n, res);
     

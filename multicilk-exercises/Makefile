@@ -21,10 +21,10 @@ CPP_TESTS = cppfib
 all: $(TESTS) $(CPP_TESTS)
 
 $(TESTS): %: %.o 
-	$(CC) $(GLIBC) $^ -o $@ -fopencilk
+	$(CC) $(GLIBC) $^ -o $@ -fopencilk -ldl
 
 $(CPP_TESTS): %: %.o 
-	$(CXX) $(GLIBC) $^ $(TOOLS) -o $@ -fopencilk
+	$(CXX) $(GLIBC) $^ $(TOOLS) -o $@ -fopencilk -ldl
 
 %.o: %.c
 	$(CC) -c $(OPTIONS) $(CFLAGS) -DTIMING_COUNT=$(TIMING_COUNT) -o $@ $<
